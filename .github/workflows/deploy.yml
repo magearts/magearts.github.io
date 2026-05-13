@@ -34,14 +34,14 @@ jobs:
           mkdir -p public/js
 
       - name: Copy HTML
-        run: cp resource/index.html public/
+        run: cp resources/index.html public/
 
       - name: Copy CSS
-        run: cp resource/css/style.css public/css/
+        run: cp resources/css/style.css public/css/
 
       - name: Obfuscate JavaScript
         run: |
-          npx javascript-obfuscator resource/js/script.js \
+          npx javascript-obfuscator resources/js/script.js \
           --output public/js/script.js \
           --compact true \
           --control-flow-flattening true \
