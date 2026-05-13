@@ -37,7 +37,7 @@ jobs:
       - name: Copy Files to Public Folder
         run: |
           mkdir -p public
-          cp -r resources public
+          cp -r cp -r resources/. public/
 
       - name: Obfuscate All JavaScript Files
         run: |
