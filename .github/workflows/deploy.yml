@@ -32,26 +32,27 @@ jobs:
         run: npm install
 
       - name: Clean Public Folder
-        run: rm -rf public/*
+        run: rm -rf public
 
-      - name: Create Public Structure
+      - name: Create Public Folder
+        run: mkdir -p public
+
+      - name: Copy
+        run: cp resources/ public/
+
+      - name: Obfuscate All JavaScript Files
         run: |
-          mkdir -p public/css
-          mkdir -p public/js
+          find resources/js -name "*.js" | while read file; do
+            output="public/${file#resources/}"
 
-      - name: Copy HTML
-        run: cp resources/index.html public/
+            mkdir -p "$(dirname "$output")"
 
-      - name: Copy CSS
-        run: cp resources/css/style.css public/css/
-
-      - name: Obfuscate JavaScript
-        run: |
-          npx javascript-obfuscator resources/js/script.js \
-          --output public/js/script.js \
-          --compact true \
-          --control-flow-flattening true \
-          --self-defending true
+            npx javascript-obfuscator "$file" \
+              --output "$output" \
+              --compact true \
+              --control-flow-flattening true \
+              --self-defending true
+          done
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
