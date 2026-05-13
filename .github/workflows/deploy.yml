@@ -34,11 +34,10 @@ jobs:
       - name: Clean Public Folder
         run: rm -rf public
 
-      - name: Create Public Folder
-        run: mkdir -p public
-
-      - name: Copy
-        run: cp resources/ public/
+      - name: Copy files
+        run: |
+          mkdir -p public
+          cp -r resources public
 
       - name: Obfuscate All JavaScript Files
         run: |
