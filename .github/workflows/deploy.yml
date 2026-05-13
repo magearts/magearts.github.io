@@ -34,7 +34,7 @@ jobs:
       - name: Clean Public Folder
         run: rm -rf public
 
-      - name: Copy files
+      - name: Copy Files to Public Folder
         run: |
           mkdir -p public
           cp -r resources public
