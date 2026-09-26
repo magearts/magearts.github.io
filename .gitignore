@@ -19,3 +19,7 @@ coverage
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Local credentials and scratch files. Never track this: a commit that
+# included tmp/.github would publish a working GitHub token.
+tmp/
