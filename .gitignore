@@ -1,2 +1,25 @@
-.venv
+# Logs
+logs
+*.log
+npm-debug.log*
+
 node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+*.local
+
+# Env (keep .env.example)
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+
+# Vite
+*.timestamp-*-*.mjs
+
+# Local credentials and scratch files. Never track this: a commit that
+# included tmp/.github would publish a working GitHub token.
+tmp/
