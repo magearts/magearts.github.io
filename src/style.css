@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Preline UI */
+@source "../node_modules/preline/dist/*.js";
+@import "../node_modules/preline/variants.css";
+
+/* Preline Themes */
+@import "../node_modules/preline/css/themes/theme.css";
+
+/* Match Preline: dark mode is driven by the .dark class (set from prefers-color-scheme in index.html). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+ * MageArts theme — shared with smart-switch (inos/smart-switch/lib/MageArts/web/style.css).
+ * Brand colors come from ../logo/MageArts-logo-ver1.svg: teal #0082a5, orange #fe6e00.
+ * Every text/UI pair below meets WCAG 2.2 AA (text ≥ 4.5:1, large text / UI ≥ 3:1).
+ *
+ * Contrast (light)                       Contrast (dark)
+ *   foreground / background  14.71         foreground / background  15.13
+ *   muted / background        4.72         muted / background        6.95
+ *   primary / background      5.61         primary / background      7.38
+ *   white / primary btn       6.16         #12181b / primary btn     7.38
+ *   white / primary hover     8.22         #12181b / primary hover   9.09
+ *   brand (h1, ≥24px) / bg    4.04 large   brand (h1, ≥24px) / bg    7.38
+ *   warn text / card          5.28         warn text / card          6.95
+ *   #12181b / warn btn        6.35         #12181b / warn btn        7.72
+ *   destructive / card        6.47         destructive / card        5.83
+ *   input border / card       3.36         input border / card       3.37
+ *
+ * #0082a5 fails as body text (4.04) and under white text (4.43) — use it only for the logo
+ * and large text (text-brand). --border is a decorative divider (1.27), never an input edge.
+ * ------------------------------------------------------------------------- */
+:root {
+  --brand: #0082a5;
+
+  --background: #f1f5f7;
+  --foreground: #13232a;
+  --muted-foreground: #5d7079;
+  --muted-foreground-1: #5d7079;
+
+  --card: #ffffff;
+  --card-line: #dde6ea;
+  --border: #dde6ea;
+
+  --layer: #ffffff;
+  --layer-foreground: #13232a;
+  --layer-line: #7d8f97;
+  --layer-hover: #e4f2f6;
+  --layer-focus: #e4f2f6;
+  --layer-active: #e4f2f6;
+
+  --primary: #006a87;
+  --primary-foreground: #ffffff;
+  --primary-hover: #00566e;
+  --primary-focus: #00566e;
+  --primary-active: #00566e;
+  --primary-checked: #006a87;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --destructive-hover: #991b1b;
+  --destructive-focus: #991b1b;
+
+  --warn: #b34d00;
+  --warn-fill: #fe6e00;
+  --warn-fill-foreground: #12181b;
+  --ok: #0f7d63;
+}
+
+.dark {
+  --brand: #35b4d6;
+
+  --background: #12181b;
+  --foreground: #e6edf0;
+  --muted-foreground: #93a4ac;
+  --muted-foreground-1: #93a4ac;
+
+  --card: #1a2227;
+  --card-line: #27343a;
+  --border: #27343a;
+
+  --layer: #1a2227;
+  --layer-foreground: #e6edf0;
+  --layer-line: #5f7680;
+  --layer-hover: #14323c;
+  --layer-focus: #14323c;
+  --layer-active: #14323c;
+
+  --primary: #35b4d6;
+  --primary-foreground: #12181b;
+  --primary-hover: #5ec6e2;
+  --primary-focus: #5ec6e2;
+  --primary-active: #5ec6e2;
+  --primary-checked: #35b4d6;
+
+  --destructive: #f87171;
+  --destructive-foreground: #12181b;
+  --destructive-hover: #fca5a5;
+  --destructive-focus: #fca5a5;
+
+  --warn: #ff8c33;
+  --warn-fill: #ff8c33;
+  --warn-fill-foreground: #12181b;
+  --ok: #4ade80;
+}
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-warn: var(--warn);
+  --color-warn-fill: var(--warn-fill);
+  --color-warn-fill-foreground: var(--warn-fill-foreground);
+  --color-ok: var(--ok);
+}
+
+@layer base {
+  /* WCAG 2.4.7 / 2.4.11: visible focus that is never hidden. */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    scroll-margin-block: 5rem;
+  }
+
+  /* WCAG 2.5.8: minimum 24×24px target (inline text links are exempt). */
+  button,
+  [role="button"],
+  select,
+  input:not([type="hidden"]) {
+    min-height: 24px;
+    min-width: 24px;
+  }
+}
+
+@layer base {
+  /* Thai stacks vowels above and tone marks above those, then hangs vowels
+     below the line as well. At the Latin leading the marks collide with the
+     line above, so body text in Thai gets more room. Headings are left alone:
+     they are short, and the extra space reads as a gap. */
+  :lang(th) p,
+  :lang(th) li {
+    line-height: 1.85;
+  }
+}

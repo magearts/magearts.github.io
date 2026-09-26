@@ -1,2 +1,21 @@
-.venv
+# Logs
+logs
+*.log
+npm-debug.log*
+
 node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+*.local
+
+# Env (keep .env.example)
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+
+# Vite
+*.timestamp-*-*.mjs
