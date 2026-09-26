@@ -3,22 +3,39 @@ logs
 *.log
 npm-debug.log*
 
+# Dependencies and build output
 node_modules
-.DS_Store
 dist
 dist-ssr
 coverage
 *.local
+*.tsbuildinfo
+
+# Vite
+*.timestamp-*-*.mjs
+
+# Operating system clutter. Finder drops .DS_Store into every folder it
+# opens, and ._* beside files copied onto a non-Mac disk. Neither belongs to
+# the project; .DS_Store was tracked here for years before this rule existed.
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# Editor state. .vscode/settings.json was tracked from the Live Server days
+# and outlived the tool it configured. Nothing in here belongs to anyone but
+# the person at the keyboard - if a setting ever does need sharing, un-ignore
+# that one file rather than the whole folder.
+.vscode/
+.idea/
+*.swp
 
 # Env (keep .env.example)
 .env
 .env.*
 !.env.example
-
-*.tsbuildinfo
-
-# Vite
-*.timestamp-*-*.mjs
 
 # Local credentials and scratch files. Never track this: a commit that
 # included tmp/.github would publish a working GitHub token.
