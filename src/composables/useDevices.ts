@@ -6,6 +6,7 @@ import {
   onValue,
   ref as dbRef,
   serverTimestamp,
+  set,
   update,
   type Unsubscribe,
 } from 'firebase/database'
@@ -26,6 +27,8 @@ export interface Device {
   caps?: Record<string, boolean>
   cmd?: { on?: boolean; ts?: number }
   state?: { on?: boolean; t?: number; h?: number; ts?: number }
+  req?: { what?: string; ver?: string; ts?: number }
+  ota?: { ver?: string; st?: string; err?: string; ts?: number }
   sched?: {
     tz?: string
     slots?: Record<string, { on: boolean; at: number; days: number; en: boolean }>
@@ -610,6 +613,144 @@ export function iconKey(device: Device) {
  */
 export async function askDevice(id: string, what: 'reboot' | 'factory-reset') {
   await update(dbRef(db, `devices/${id}/req`), { what, ts: serverTimestamp() })
+}
+
+/*
+ * Firmware versions, compared as three numbers.
+ *
+ * Only the three at the front count (PROTOCOL.md, "Where versions come
+ * from"): a board built on a desk says "0.3.0-4-gabc1234-dirty" and is 0.3.0.
+ * Never as strings - as strings "0.10.0" sorts before "0.9.0".
+ */
+export function parseVersion(v?: string): [number, number, number] | null {
+  const m = v?.match(/^(\d+)\.(\d+)\.(\d+)/)
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null
+}
+
+// Below zero when a is older than b, zero when they are the same, above when
+// newer. Null when either is not a version at all.
+export function compareVersions(a?: string, b?: string): number | null {
+  const x = parseVersion(a)
+  const y = parseVersion(b)
+  if (!x || !y) return null
+
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i]! - y[i]!
+  return 0
+}
+
+/*
+ * The first firmware that knows `update`. Anything older treats a request it
+ * does not recognise as a reboot, and would restart on its old version while
+ * the portal waited for a new one (PROTOCOL.md, "What is not updated").
+ */
+const FIRST_UPDATABLE = '0.2.0'
+
+/*
+ * Why an update cannot be asked for right now, or null when it can.
+ *
+ * The button is always shown, and this is what it says instead of asking
+ * GitHub when the answer would not matter. Offline, because a request sent to
+ * a board that is not there runs whenever it next comes back - maybe days
+ * later, with nobody watching. And busy, because a second request would
+ * replace the first.
+ */
+export type UpdateBlocker = 'old-firmware' | 'offline' | 'busy'
+
+export function updateBlocker(device: Device): UpdateBlocker | null {
+  const since = compareVersions(device.fw, FIRST_UPDATABLE)
+
+  if (since === null || since < 0) return 'old-firmware'
+  if (!isOnline(device)) return 'offline'
+  if (device.req) return 'busy'
+  return null
+}
+
+/*
+ * What this tab has asked for, per device.
+ *
+ * Once the board takes `req` away, nothing in the record says a version was
+ * asked for, or when - and both are needed to tell "updating" from "updated"
+ * and to know when to give up. So they are kept here, for as long as the tab
+ * is open. A reload mid-update loses them and falls back to what the record
+ * says by itself: `req` while it is waiting, `fw` and `ota` after.
+ *
+ * `at` is the server's time, like everything it is compared with.
+ */
+const asked = ref(new Map<string, { ver: string; at: number }>())
+
+/*
+ * Ask for one version, by number and never by address.
+ *
+ * The board builds the download address from one compiled into it, so the
+ * most anybody signed in as the owner can ask for is a version that was
+ * published (PROTOCOL.md, "Asking for one"). `set` rather than `update`: the
+ * request is replaced whole, so nothing from an earlier one comes along.
+ */
+export async function askUpdate(id: string, ver: string) {
+  if (!/^\d+\.\d+\.\d+$/.test(ver)) throw new Error(`not a version: ${ver}`)
+
+  await set(dbRef(db, `devices/${id}/req`), { what: 'update', ver, ts: serverTimestamp() })
+
+  const next = new Map(asked.value)
+  next.set(id, { ver, at: now.value + offset.value })
+  asked.value = next
+}
+
+/*
+ * How long to wait before saying the board is not answering. Ten minutes of
+ * probation and the time to restart fit inside it.
+ */
+const UPDATE_GIVES_UP_MS = 12 * 60 * 1000
+
+export type UpdatePhase =
+  | { phase: 'idle' }
+  | { phase: 'waiting'; ver: string }
+  | { phase: 'updating'; ver: string }
+  | { phase: 'done'; ver: string }
+  | { phase: 'silent'; ver: string }
+  | { phase: 'failed'; ver: string; err: string }
+  | { phase: 'rolled-back'; ver: string }
+
+/*
+ * Where an update has got to, read off the record.
+ *
+ * An `ota` report is current only while its `ts` is later than `seen`: any
+ * boot afterwards retires it, the one after a good update included
+ * (PROTOCOL.md, "When it does not work"). While a request of this tab's is
+ * in flight, a report older than the request belongs to an earlier attempt
+ * and is not shown.
+ */
+export function updatePhase(device: Device): UpdatePhase {
+  const mine = asked.value.get(device.id)
+
+  if (device.req?.what === 'update') return { phase: 'waiting', ver: device.req.ver ?? mine?.ver ?? '' }
+
+  const ota = device.ota
+  const report = !!ota?.ts && ota.ts > (device.seen ?? 0) && (!mine || ota.ts > mine.at)
+
+  if (report && ota?.st === 'failed') return { phase: 'failed', ver: ota.ver ?? '', err: ota.err ?? '' }
+  if (report && ota?.st === 'rolled-back') return { phase: 'rolled-back', ver: ota.ver ?? '' }
+
+  if (mine) {
+    // Started since it was asked, and on the version asked for. The boot is
+    // part of the test, so that asking for the version already running does
+    // not read as done before the board has done anything.
+    if ((device.seen ?? 0) > mine.at && compareVersions(device.fw, mine.ver) === 0) {
+      return { phase: 'done', ver: mine.ver }
+    }
+
+    if (now.value + offset.value - mine.at > UPDATE_GIVES_UP_MS) return { phase: 'silent', ver: mine.ver }
+    return { phase: 'updating', ver: mine.ver }
+  }
+
+  return { phase: 'idle' }
+}
+
+// Commands sent while a switch is updating are lost: the board has closed its
+// stream to make room for the download. The button is not offered meanwhile.
+export function updating(device: Device) {
+  const { phase } = updatePhase(device)
+  return phase === 'waiting' || phase === 'updating'
 }
 
 /*

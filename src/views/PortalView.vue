@@ -36,6 +36,7 @@ import {
   releaseDevices,
   setPower,
   setPowerMany,
+  updating,
   workingOn,
   powerTone,
   type Device,
@@ -984,7 +985,7 @@ const barActions = computed<BarAction[]>(() => {
             type="button"
             role="switch"
             :aria-checked="powerOf(device) === 'on'"
-            :disabled="sendingTo.has(device.id)"
+            :disabled="sendingTo.has(device.id) || updating(device)"
             :aria-label="`${t.portal.power}: ${deviceName(device)}`"
             class="group absolute end-2 top-2 flex size-12 items-center justify-center rounded-full disabled:opacity-60 sm:end-3 sm:top-3"
             :class="workingOn(device) ? 'motion-safe:animate-pulse' : ''"
