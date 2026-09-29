@@ -13,7 +13,7 @@ import { getDatabase } from 'firebase/database'
  * None of the values below are secrets. They are in the bundle any visitor can
  * read, and they identify the project rather than authorise anything. What
  * keeps the data safe is the security rules. See PROTOCOL.md and FIREBASE.md
- * in the smart-switch repository.
+ * in the iot repository.
  */
 export const firebaseApp = initializeApp({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
