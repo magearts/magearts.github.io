@@ -23,8 +23,9 @@ export interface Device {
   owner?: string
   alive?: number
   rssi?: number
+  caps?: Record<string, boolean>
   cmd?: { on?: boolean; ts?: number }
-  state?: { on?: boolean; ts?: number }
+  state?: { on?: boolean; t?: number; h?: number; ts?: number }
   sched?: {
     tz?: string
     slots?: Record<string, { on: boolean; at: number; days: number; en: boolean }>
@@ -406,6 +407,11 @@ export async function setPowerMany(ids: string[], on: boolean) {
   const patch: Record<string, unknown> = {}
 
   for (const id of ids) {
+    // Never to a device with no `switch`. The rules would take it and
+    // nothing would be listening (PROTOCOL.md, "What a device can do").
+    const device = devices.value.find((one) => one.id === id)
+    if (device && !canSwitch(device)) continue
+
     patch[`devices/${id}/cmd`] = { on, ts: serverTimestamp() }
   }
 
@@ -456,18 +462,93 @@ export function powerLabel(device: Device) {
 }
 
 /*
+ * What it can do, which is what decides what is drawn for it.
+ *
+ * Asked of `caps` and never of `type` (PROTOCOL.md, "What a device can do"):
+ * a switch that also reads the room is a new product with nothing new in it,
+ * and should appear here with nothing changed. A key this portal does not
+ * know is ignored rather than refused, so such a device shows what is known
+ * about it instead of nothing.
+ *
+ * A record with no `caps` at all is firmware from before it existed, and the
+ * only product in the field then was the switch. That is the one place `type`
+ * still decides anything, and it will not grow a second entry: everything
+ * after it ships knowing `caps`.
+ */
+export type Caps = { switch?: boolean; temp?: boolean; humid?: boolean }
+
+export function caps(device: Device): Caps {
+  const given = device.caps
+  if (!given) return device.type === 'smart-switch' ? { switch: true } : {}
+
+  return { switch: given.switch === true, temp: given.temp === true, humid: given.humid === true }
+}
+
+/*
  * Whether it has an on and an off at all.
  *
- * Asked by `type`, which every device writes about itself on every boot, and
- * answered by a list rather than a guess: a temperature sensor has nothing to
- * switch, and a schedule set on one would be a promise nothing keeps. A type
- * this portal has never heard of is not switchable until somebody adds it
- * here.
+ * Everything that commands, schedules or reads `/logs` asks this first: a
+ * temperature sensor has nothing to switch, and a schedule set on one would
+ * be a promise nothing keeps.
  */
-const SWITCHABLE = ['smart-switch']
-
 export function canSwitch(device: Device) {
-  return !!device.type && SWITCHABLE.includes(device.type)
+  return caps(device).switch === true
+}
+
+// Whether it reads the room, which is what gets a tile its numbers and a
+// page its graph.
+export function canSense(device: Device) {
+  const has = caps(device)
+  return has.temp === true || has.humid === true
+}
+
+/*
+ * Whether it hears a request the moment it is written.
+ *
+ * `switch` means a stream and nothing else does (PROTOCOL.md, "Devices
+ * without a stream"). A device without one reads its `req` every five
+ * minutes, so a restart asked of it is on its way for that long - and saying
+ * "no response" after thirty seconds would be calling a working device dead.
+ */
+export function hearsAtOnce(device: Device) {
+  return canSwitch(device)
+}
+
+/*
+ * The room, as words: "27.4 °C · 61 %".
+ *
+ * Only what this device can report, and only what it has reported. A reading
+ * that has never arrived is left out rather than drawn as zero, which is a
+ * temperature.
+ */
+export function readingText(device: Device) {
+  const has = caps(device)
+  const parts: string[] = []
+
+  if (has.temp && typeof device.state?.t === 'number') parts.push(`${device.state.t.toFixed(1)} °C`)
+  if (has.humid && typeof device.state?.h === 'number') parts.push(`${Math.round(device.state.h)} %`)
+
+  return parts.join(' · ')
+}
+
+/*
+ * How long ago something was, in the fewest words that are true.
+ *
+ * Server time on both sides, the same as `isOnline`: `state.ts` is written by
+ * the database, and this phone's clock has never agreed with it. It moves on
+ * the same five-second tick, so "just now" turns into minutes by itself.
+ */
+export function agoText(at?: number) {
+  if (!at) return ''
+
+  const minutes = Math.floor((now.value + offset.value - at) / 60000)
+  if (minutes < 1) return t.value.portal.agoNow
+  if (minutes < 60) return t.value.portal.agoMinutes.replace('{n}', String(minutes))
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return t.value.portal.agoHours.replace('{n}', String(hours))
+
+  return t.value.portal.agoDays.replace('{n}', String(Math.floor(hours / 24)))
 }
 
 /*
@@ -484,7 +565,23 @@ export function deviceName(device: Device) {
   const given = currentSite.value?.devices?.[device.id]?.name?.trim()
   if (given) return given
 
-  return device.type === 'smart-switch' ? t.value.portal.smartSwitch : t.value.portal.unnamed
+  const kind = device.type ? TYPE_NAMES[device.type] : undefined
+  return kind ? t.value.portal[kind] : t.value.portal.unnamed
+}
+
+/*
+ * Which product it is, for the name it goes by until somebody gives it one.
+ *
+ * This is `type` doing the one job it is for - telling people what they have
+ * - and nothing is decided by it. A type missing from here is still drawn by
+ * its `caps`; it is only called "Device".
+ *
+ * `room-sensor` is what the sensor firmware is expected to call itself. Check
+ * `fwType()` in its `main.cpp` when it exists.
+ */
+const TYPE_NAMES: Record<string, 'smartSwitch' | 'roomSensor'> = {
+  'smart-switch': 'smartSwitch',
+  'room-sensor': 'roomSensor',
 }
 
 // Whether that name is one somebody chose, which the rename field needs to

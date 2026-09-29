@@ -25,8 +25,11 @@ import {
   deviceName,
   devices,
   devicesReady,
+  agoText,
+  canSense,
   canSwitch,
   isOnline,
+  readingText,
   powerLabel,
   powerOf,
   iconKey,
@@ -929,15 +932,33 @@ const barActions = computed<BarAction[]>(() => {
                  exception leaves nothing to tell "this is answering" apart
                  from "this has not been built yet".
 
-                 The words are there for anybody who sees neither glyph. -->
-            <span class="mt-auto flex min-w-0 items-center gap-x-1.5 text-sm text-muted-foreground">
+                 The words are there for anybody who sees neither glyph.
+
+                 A sensor has its numbers on a line above, and the time they
+                 were taken here - marked as the last reading once the device
+                 has stopped answering, so yesterday's room is not read as
+                 today's. A device that is neither says whether it is there
+                 and nothing more. -->
+            <span
+              v-if="canSense(device)"
+              class="mt-auto min-w-0 truncate font-semibold tabular-nums"
+            >
+              {{ readingText(device) || t.portal.noReading }}
+            </span>
+            <span
+              class="flex min-w-0 items-center gap-x-1.5 text-sm text-muted-foreground"
+              :class="canSense(device) ? '' : 'mt-auto'"
+            >
               <SignalIcon
                 :device="device"
                 class="size-4 shrink-0"
                 :class="isOnline(device) ? '' : 'opacity-70'"
               />
-              <span class="min-w-0 truncate">{{ powerLabel(device) }}</span>
-              <span class="sr-only">
+              <span v-if="canSwitch(device)" class="min-w-0 truncate">{{ powerLabel(device) }}</span>
+              <span v-else-if="canSense(device) && device.state?.ts" class="min-w-0 truncate">
+                <template v-if="!isOnline(device)">{{ t.portal.readingOld }} · </template>{{ agoText(device.state.ts) }}
+              </span>
+              <span :class="canSwitch(device) || (canSense(device) && device.state?.ts) ? 'sr-only' : 'min-w-0 truncate'">
                 {{ isOnline(device) ? t.portal.deviceOnline : t.portal.deviceOffline }}
               </span>
             </span>

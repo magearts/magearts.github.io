@@ -91,6 +91,7 @@ export interface Copy {
     stepInstallApp: string
     unnamed: string
     smartSwitch: string
+    roomSensor: string
     account: string
     close: string
     website: string
@@ -177,6 +178,7 @@ export interface Copy {
     eraseWarning: string
     eraseConfirm: string
     asked: string
+    askedSlow: string
     askFailed: string
     save: string
     saveFailed: string
@@ -277,6 +279,19 @@ export interface Copy {
     deleteSchedule: string
     deleteScheduleHeading: string
     deleteScheduleBody: string
+    agoNow: string
+    agoMinutes: string
+    agoHours: string
+    agoDays: string
+    readingOld: string
+    noReading: string
+    readingsHeading: string
+    readingsHint: string
+    noReadings: string
+    temperature: string
+    humidity: string
+    lowest: string
+    highest: string
   }
 }
 
@@ -359,6 +374,7 @@ const en: Copy = {
     stepInstallApp: 'Choose Install app, or Add to Home screen',
     unnamed: 'Device',
     smartSwitch: 'Wi-Fi switch',
+    roomSensor: 'Room sensor',
     account: 'Account',
     close: 'Close',
     website: 'MageArts website',
@@ -466,6 +482,7 @@ const en: Copy = {
       'It will forget the Wi-Fi network and leave it straight away. Nobody can bring it back from here — somebody has to go to the device, join the network it starts broadcasting, and set it up again. It stays yours, and it keeps its setup code.',
     eraseConfirm: 'Reset',
     asked: 'Asked. The device will do it the moment it hears.',
+    askedSlow: 'Asked. This device checks every 5 minutes, so it will happen within 5 minutes.',
     askFailed: 'Could not ask. Check your connection and try again.',
     save: 'Save',
     saveFailed: 'Could not save that. Check your connection and try again.',
@@ -580,6 +597,19 @@ const en: Copy = {
     deleteSchedule: 'Delete schedule',
     deleteScheduleHeading: 'Delete this schedule?',
     deleteScheduleBody: 'It is removed from every device it is set on.',
+    agoNow: 'just now',
+    agoMinutes: '{n} min ago',
+    agoHours: '{n} h ago',
+    agoDays: '{n} d ago',
+    readingOld: 'last reading',
+    noReading: 'No reading yet',
+    readingsHeading: 'Last 24 hours',
+    readingsHint: 'One reading every 5 minutes. Gaps are times the device had no power or no clock.',
+    noReadings: 'Nothing in the last 24 hours.',
+    temperature: 'Temperature',
+    humidity: 'Humidity',
+    lowest: 'Low',
+    highest: 'High',
   },
 }
 
@@ -650,6 +680,7 @@ const th: Copy = {
     stepInstallApp: 'เลือก ติดตั้งแอป หรือ เพิ่มลงในหน้าจอหลัก',
     unnamed: 'อุปกรณ์',
     smartSwitch: 'สวิตช์ Wi-Fi',
+    roomSensor: 'เซนเซอร์ในห้อง',
     account: 'บัญชี',
     close: 'ปิด',
     website: 'เว็บไซต์ MageArts',
@@ -742,6 +773,7 @@ const th: Copy = {
       'อุปกรณ์จะลืมเครือข่าย Wi-Fi แล้วหลุดออกทันที เรียกกลับจากหน้านี้ไม่ได้ ต้องมีคนเดินไปที่ตัวเครื่อง ต่อเข้าเครือข่ายที่มันเปิดขึ้นมา แล้วตั้งค่าใหม่ ตัวเครื่องยังเป็นของคุณ และรหัสติดตั้งยังเหมือนเดิม',
     eraseConfirm: 'รีเซ็ต',
     asked: 'ส่งคำสั่งแล้ว อุปกรณ์จะทำทันทีที่ได้ยิน',
+    askedSlow: 'ส่งคำสั่งแล้ว อุปกรณ์นี้ตรวจคำสั่งทุก 5 นาที จึงจะทำภายใน 5 นาที',
     askFailed: 'ส่งคำสั่งไม่สำเร็จ ตรวจการเชื่อมต่อแล้วลองใหม่',
     save: 'บันทึก',
     saveFailed: 'บันทึกไม่สำเร็จ ตรวจการเชื่อมต่อแล้วลองใหม่',
@@ -842,6 +874,19 @@ const th: Copy = {
     deleteSchedule: 'ลบเวลานี้',
     deleteScheduleHeading: 'ลบเวลานี้ใช่ไหม',
     deleteScheduleBody: 'จะถูกลบออกจากทุกอุปกรณ์ที่ตั้งไว้',
+    agoNow: 'เมื่อสักครู่',
+    agoMinutes: '{n} นาทีที่แล้ว',
+    agoHours: '{n} ชม. ที่แล้ว',
+    agoDays: '{n} วันที่แล้ว',
+    readingOld: 'ค่าล่าสุด',
+    noReading: 'ยังไม่มีค่าที่วัดได้',
+    readingsHeading: '24 ชั่วโมงที่ผ่านมา',
+    readingsHint: 'วัดทุก 5 นาที ช่วงที่ขาดหายคือช่วงที่อุปกรณ์ไม่มีไฟหรือยังไม่รู้เวลา',
+    noReadings: 'ไม่มีข้อมูลใน 24 ชั่วโมงที่ผ่านมา',
+    temperature: 'อุณหภูมิ',
+    humidity: 'ความชื้น',
+    lowest: 'ต่ำสุด',
+    highest: 'สูงสุด',
   },
 }
 
