@@ -131,6 +131,17 @@
 }
 
 @layer base {
+  /* viewport-fit=cover lets the page run under a phone's notch and rounded
+     corners, which the portal's top bar needs on the home screen. Turned
+     sideways, the notch is at the side, so the side edges are kept clear for
+     every page. */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@layer base {
   /* Thai stacks vowels above and tone marks above those, then hangs vowels
      below the line as well. At the Latin leading the marks collide with the
      line above, so body text in Thai gets more room. Headings are left alone:
@@ -138,5 +149,65 @@
   :lang(th) p,
   :lang(th) li {
     line-height: 1.85;
+  }
+}
+
+@layer base {
+  /* Tapping twice is how you zoom a web page, so a phone holds every single
+     tap for about a third of a second in case a second one is coming. That
+     wait is most of what makes a page feel like a page rather than an app,
+     and the portal is meant to sit on a home screen.
+
+     `manipulation` keeps panning and pinching and gives up only the
+     double-tap. Deliberate two-finger zoom still works, which is what keeps
+     this on the right side of WCAG 1.4.4 Resize Text.
+
+     What this is deliberately *not* is `user-scalable=no` in the viewport
+     meta. That switches zoom off altogether, which does fail 1.4.4 — and
+     iOS Safari has ignored it since iOS 10 anyway, so it would buy a
+     standards violation and not even deliver.
+
+     Every element, not just the root. `touch-action` does not inherit, and
+     WebKit reads it off whatever the finger actually landed on — set it on
+     `html` alone and a tap on a heading is governed by nothing at all. */
+  html,
+  body,
+  body * {
+    touch-action: manipulation;
+  }
+
+  /* The rest of what a native control does: no grey flash on the way down,
+     and a long press that acts on the control rather than selecting its
+     label. Only the controls — text stays selectable, because a device id
+     and a setup code are things people copy.
+
+     Nothing here touches overscroll: the portal's pull-to-refresh owns that
+     behaviour and would stop working. */
+  button,
+  [role="button"],
+  a,
+  label,
+  select,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+@layer base {
+  /* A modal <dialog> makes everything behind it inert - unfocusable,
+     unclickable, hidden from a screen reader - and then lets the page behind
+     it go on scrolling, which is the one thing people notice. A thumb resting
+     on the backdrop scrolls the list away underneath, and closing the dialog
+     leaves them somewhere they did not choose to be.
+
+     `:has()` keeps this in CSS. Locking the scroll from JavaScript means
+     remembering to unlock it on every path out - the close button, Escape,
+     the backdrop, a route change, a crash - and one missed path is a page
+     that can never be scrolled again. */
+  html:has(dialog[open]),
+  body:has(dialog[open]) {
+    overflow: hidden;
   }
 }

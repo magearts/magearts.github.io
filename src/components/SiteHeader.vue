@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, type Component } from 'vue'
+import { useRoute } from 'vue-router'
 import { HSStaticMethods } from 'preline'
 import { Check, ChevronDown, Globe, Monitor, Moon, Sun } from 'lucide-vue-next'
-import { LOCALES, locale, localeNames, localePath, t } from '@/i18n'
+import { LOCALES, locale, localeNames, pathFor, t } from '@/i18n'
 import { setTheme, theme, THEME_CHOICES, type ThemeChoice } from '@/theme'
+
+const route = useRoute()
+
+// Switching language keeps you on the page you were reading. Linking at the
+// site root instead would drop somebody from their own devices back onto the
+// page that sells them one.
+const page = computed(() => route.meta.page ?? 'home')
 
 const themeIcons: Record<ThemeChoice, Component> = { light: Sun, dark: Moon, auto: Monitor }
 
@@ -37,7 +45,7 @@ const trigger =
       <!-- alt is empty because the wordmark beside it already says MageArts;
            a screen reader would otherwise announce the name twice. -->
       <RouterLink
-        :to="localePath[locale]"
+        :to="pathFor(locale, 'home')"
         class="inline-flex min-w-0 items-center gap-x-2 rounded-md font-semibold"
       >
         <img src="/logo.svg" alt="" width="336" height="362" class="h-7 w-auto shrink-0" />
@@ -45,6 +53,13 @@ const trigger =
       </RouterLink>
 
       <div class="flex shrink-0 items-center gap-x-0.5 sm:gap-x-1">
+        <RouterLink
+          :to="pathFor(locale, 'portal')"
+          class="inline-flex h-10 items-center rounded-md px-2 text-sm font-medium text-[var(--primary)] hover:bg-[var(--layer-hover)] sm:px-3"
+        >
+          {{ t.portal.link }}
+        </RouterLink>
+
         <!-- Language. Every option is a real link to that language's URL, so
              the hreflang pair keeps working and a Thai search result can point
              straight at /th. -->
@@ -72,7 +87,7 @@ const trigger =
             <RouterLink
               v-for="code in LOCALES"
               :key="code"
-              :to="localePath[code]"
+              :to="pathFor(code, page)"
               :lang="code"
               :hreflang="code"
               :class="item"

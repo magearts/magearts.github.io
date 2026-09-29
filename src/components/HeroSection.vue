@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { locale, localePath, t } from '@/i18n'
+import { locale, pathFor, t } from '@/i18n'
 </script>
 
 <template>
@@ -28,7 +28,7 @@ import { locale, localePath, t } from '@/i18n'
     </p>
 
     <RouterLink
-      :to="{ path: localePath[locale], hash: '#work' }"
+      :to="{ path: pathFor(locale, 'home'), hash: '#work' }"
       class="mt-7 inline-flex h-11 max-w-full items-center rounded-lg bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] sm:h-12 sm:text-base"
     >
       {{ t.hero.cta }}
