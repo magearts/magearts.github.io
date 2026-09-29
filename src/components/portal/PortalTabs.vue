@@ -5,6 +5,7 @@ import { Bell, Clock, LayoutGrid, User } from 'lucide-vue-next'
 import { locale, pathFor, t, type Page } from '@/i18n'
 import { user } from '@/composables/useAuth'
 import { myInvites } from '@/composables/useSites'
+import { newRuns } from '@/composables/useScheduleRuns'
 import UserAvatar from './UserAvatar.vue'
 
 /*
@@ -29,7 +30,9 @@ import UserAvatar from './UserAvatar.vue'
  */
 const route = useRoute()
 
-const waiting = computed(() => myInvites.value.length)
+// Invitations count until they are answered; a schedule's run only until it
+// has been seen, because there is nothing to answer.
+const waiting = computed(() => myInvites.value.length + newRuns.value)
 
 const tabs = computed<{ page: Page; label: string; icon: unknown; badge: number }[]>(() => [
   { page: 'portal', label: t.value.portal.devicesTab, icon: LayoutGrid, badge: 0 },

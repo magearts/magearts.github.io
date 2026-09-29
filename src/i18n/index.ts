@@ -154,6 +154,9 @@ export interface Copy {
     automations: string
     noDevicesForAutomations: string
     noNotifications: string
+    scheduleRan: string
+    turnedOn: string
+    turnedOff: string
     devicesTab: string
     invitedBy: string
     accept: string
@@ -433,6 +436,9 @@ const en: Copy = {
     automations: 'Automations',
     noDevicesForAutomations: 'None of your devices can be switched on and off on a schedule yet.',
     noNotifications: 'Nothing to tell you.',
+    scheduleRan: 'Schedule ran',
+    turnedOn: 'Turned on',
+    turnedOff: 'Turned off',
     devicesTab: 'Devices',
     invitedBy: 'Invited by',
     accept: 'Accept',
@@ -710,6 +716,9 @@ const th: Copy = {
     automations: 'อัตโนมัติ',
     noDevicesForAutomations: 'ยังไม่มีอุปกรณ์ที่ตั้งเวลาเปิดปิดได้',
     noNotifications: 'ยังไม่มีอะไรต้องแจ้ง',
+    scheduleRan: 'ตั้งเวลาทำงาน',
+    turnedOn: 'เปิดแล้ว',
+    turnedOff: 'ปิดแล้ว',
     devicesTab: 'อุปกรณ์',
     invitedBy: 'เชิญโดย',
     accept: 'เข้าร่วม',
