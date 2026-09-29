@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { locale, pathFor, t } from '@/i18n'
 import { authReady, user } from '@/composables/useAuth'
@@ -10,22 +10,28 @@ import {
   myInvites,
   readAt,
 } from '@/composables/useSites'
+import { deviceName, devices } from '@/composables/useDevices'
+import { scheduleRuns, type ScheduleRun } from '@/composables/useScheduleRuns'
 import PortalBar from '@/components/portal/PortalBar.vue'
 import Spinner from '@/components/portal/Spinner.vue'
 
 /*
- * Whatever is waiting for an answer.
+ * Whatever is waiting for an answer, and what the schedules did.
  *
- * Today that is invitations and nothing else. It is still not a mailbox -
- * an invitation is a row in the database until it is answered, and answering
- * it is what makes the row go away, so there is nothing to dismiss and no
- * history to keep.
+ * Invitations first, because they are the only thing here that asks for
+ * something. Then the schedules that ran in the last day, newest first - so
+ * that "did the lights come on while I was out" is answered without opening
+ * each automation in turn.
+ *
+ * It is still not a mailbox. An invitation is a row in the database until it
+ * is answered, and a run is a line in the device's log that falls out of the
+ * day on its own, so there is nothing to dismiss and no history to keep.
  *
  * What it does have is one number: when this person last looked. Anything
- * offered since is marked new. That is one write per visit rather than a
- * flag per invitation, and it survives the invitation going away, which a
- * per-item flag would not - it would outlive the thing it was about and have
- * to be swept up afterwards.
+ * since is marked new. That is one write per visit rather than a flag per
+ * item, and it survives the item going away, which a per-item flag would not
+ * - it would outlive the thing it was about and have to be swept up
+ * afterwards.
  */
 const router = useRouter()
 
@@ -57,6 +63,26 @@ const answering = ref('')
 onBeforeUnmount(() => {
   if (user.value) markNotificationsRead().catch(() => {})
 })
+
+const nothing = computed(() => myInvites.value.length === 0 && scheduleRuns.value.length === 0)
+
+function whenText(at: number) {
+  return new Intl.DateTimeFormat(locale.value === 'th' ? 'th-TH' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(at)
+}
+
+// A device taken out of the site since is left out rather than shown by id.
+function devicesText(run: ScheduleRun) {
+  return run.devices
+    .map((id) => devices.value.find((d) => d.id === id))
+    .filter((d) => d !== undefined)
+    .map((d) => deviceName(d))
+    .join(', ')
+}
 
 async function say(siteId: string, yes: boolean) {
   if (answering.value) return
@@ -94,7 +120,7 @@ async function say(siteId: string, yes: boolean) {
     <div class="max-w-md">
     <Spinner v-if="!authReady" class="mt-6" />
 
-    <p v-else-if="myInvites.length === 0" class="mt-16 text-center text-muted-foreground">
+    <p v-else-if="nothing" class="mt-16 text-center text-muted-foreground">
       {{ t.portal.noNotifications }}
     </p>
 
@@ -142,6 +168,31 @@ async function say(siteId: string, yes: boolean) {
             {{ t.portal.accept }}
           </button>
         </div>
+      </li>
+
+      <!-- A run asks nothing, so it has no buttons; it is a card for the
+           same reason the invitations are, one thing per card. The key is
+           the slot and the time, which is what makes one run of it. -->
+      <li
+        v-for="run in scheduleRuns"
+        :key="`${run.slot}-${run.at}`"
+        class="rounded-2xl border border-[var(--layer-line)] bg-[var(--card)] p-4"
+      >
+        <p class="flex items-center gap-x-2 text-sm text-muted-foreground">
+          <template v-if="run.at > readAt">
+            <span
+              class="inline-block size-2 shrink-0 rounded-full bg-[var(--primary)]"
+              aria-hidden="true"
+            ></span>
+            <span class="font-semibold text-[var(--primary)]">{{ t.portal.newLabel }}</span>
+            <span aria-hidden="true">·</span>
+          </template>
+          {{ t.portal.scheduleRan }}
+          <span aria-hidden="true">·</span>
+          <time :datetime="new Date(run.at).toISOString()">{{ whenText(run.at) }}</time>
+        </p>
+        <p class="mt-1 font-semibold">{{ run.on ? t.portal.turnedOn : t.portal.turnedOff }}</p>
+        <p class="mt-0.5 text-sm text-muted-foreground">{{ devicesText(run) }}</p>
       </li>
     </ul>
     </div>
