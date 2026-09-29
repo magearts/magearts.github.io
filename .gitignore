@@ -13,6 +13,9 @@ coverage
 
 # Vite
 *.timestamp-*-*.mjs
+# Vite's dependency cache. It lives in node_modules/.vite, except when
+# node_modules is missing - then Vite puts it here at the root instead.
+.vite/
 
 # Operating system clutter. Finder drops .DS_Store into every folder it
 # opens, and ._* beside files copied onto a non-Mac disk. Neither belongs to
