@@ -15,8 +15,13 @@ import {
 import { locale, pathFor, t } from '@/i18n'
 import { authReady, user } from '@/composables/useAuth'
 import {
+  agoText,
   askDevice,
+  canSense,
+  canSwitch,
+  caps,
   deviceName,
+  hearsAtOnce,
   devices,
   devicesReady,
   givenName,
@@ -26,6 +31,7 @@ import {
   workingOn,
   signalOf,
   powerLabel,
+  readingText,
   powerOf,
   releaseDevices,
   setPower,
@@ -35,10 +41,12 @@ import { currentSite, isOwner, editDevice } from '@/composables/useSites'
 import { DEFAULT_ICON, ICON_GROUPS, iconByKey } from '@/composables/useIcons'
 import { closeLog, logLines, logReady, openLog, type LogLine } from '@/composables/useDeviceLog'
 import { schedules, timeText } from '@/composables/useSchedules'
+import { closeReadings, openReadings, readings } from '@/composables/useReadings'
 import ConfirmDialog from '@/components/portal/ConfirmDialog.vue'
 import PortalBar from '@/components/portal/PortalBar.vue'
 import SignalIcon from '@/components/portal/SignalIcon.vue'
 import HintLabel from '@/components/portal/HintLabel.vue'
+import ReadingsChart from '@/components/portal/ReadingsChart.vue'
 import Spinner from '@/components/portal/Spinner.vue'
 
 /*
@@ -71,15 +79,42 @@ const loading = computed(() => !authReady.value || (!!user.value && !devicesRead
  * at seven" is not answered by a list that has left out the schedule, or the
  * button on the wall, or the phone.
  */
+/*
+ * Only for a switch: `/logs` is what the relay did, and a device without one
+ * writes none (PROTOCOL.md, "What a device can do"). Watched on what the
+ * device can do as well as on the id, because the record may arrive after the
+ * page does.
+ */
+const switches = computed(() => (device.value ? canSwitch(device.value) : false))
+const senses = computed(() => (device.value ? canSense(device.value) : false))
+
 watch(
-  () => route.params.id,
-  (id) => {
-    if (typeof id === 'string' && id) openLog([id])
+  [() => route.params.id, switches],
+  ([id, yes]) => {
+    if (typeof id === 'string' && id && yes) openLog([id])
+    else closeLog()
   },
   { immediate: true },
 )
 
-onUnmounted(closeLog)
+/*
+ * A sensor's last day, read on arrival whether or not anybody scrolls to the
+ * graph - for the same reason as the history above: reading it is what trims
+ * it (PROTOCOL.md, "What the room was, and when").
+ */
+watch(
+  [() => route.params.id, senses],
+  ([id, yes]) => {
+    if (typeof id === 'string' && id && yes) openReadings(id)
+    else closeReadings()
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  closeLog()
+  closeReadings()
+})
 
 const historyDialog = ref<HTMLDialogElement | null>(null)
 
@@ -265,7 +300,9 @@ async function ask(what: 'reboot' | 'factory-reset') {
 
   try {
     await askDevice(current.id, what)
-    said.value = t.value.portal.asked
+    // A device without a stream reads `req` every five minutes, and saying
+    // "the moment it hears" about that one would be a promise with no date.
+    said.value = hearsAtOnce(current) ? t.value.portal.asked : t.value.portal.askedSlow
   } catch {
     said.value = t.value.portal.askFailed
   } finally {
@@ -393,7 +430,7 @@ const iconButton =
            the note below describe it instead. Both are visible, and the name
            is the visible label, so voice control finds it by what it says on
            screen (WCAG 2.5.3). -->
-      <div class="flex flex-col items-center text-center">
+      <div v-if="canSwitch(device)" class="flex flex-col items-center text-center">
         <p id="power-label" class="text-sm font-semibold">{{ t.portal.power }}</p>
 
         <button
@@ -430,6 +467,28 @@ const iconButton =
           :class="failed ? 'text-[var(--destructive)]' : 'text-muted-foreground'"
         >
           {{ note }}
+        </p>
+      </div>
+
+      <!-- The room, in large type where a switch has its button. Nothing to
+           press: a sensor has nothing to command.
+
+           A reading from a device that has stopped answering is still shown,
+           and said to be the last one rather than the current one - a
+           temperature from yesterday afternoon looks exactly like one from
+           now unless something says otherwise. -->
+      <div
+        v-if="canSense(device)"
+        class="flex flex-col items-center text-center"
+        :class="canSwitch(device) ? 'mt-8' : ''"
+      >
+        <p v-if="readingText(device)" class="text-4xl font-semibold tabular-nums">
+          {{ readingText(device) }}
+        </p>
+        <p v-else class="text-base text-muted-foreground">{{ t.portal.noReading }}</p>
+
+        <p v-if="device.state?.ts && readingText(device)" class="mt-2 text-sm text-muted-foreground">
+          <template v-if="!isOnline(device)">{{ t.portal.readingOld }} · </template>{{ agoText(device.state.ts) }}
         </p>
       </div>
 
@@ -537,7 +596,31 @@ const iconButton =
            A dialog rather than a page of its own, because it is a thing to
            glance at and close, and a page would put a back button in the way
            of getting on with whatever brought somebody here. -->
+      <template v-if="senses">
+        <h2 class="mt-8 text-sm font-semibold">{{ t.portal.readingsHeading }}</h2>
+        <p class="mt-1 text-xs text-muted-foreground">{{ t.portal.readingsHint }}</p>
+        <div class="mt-2 grid gap-3">
+          <ReadingsChart
+            v-if="caps(device).temp"
+            :readings="readings"
+            field="t"
+            unit="°C"
+            :label="t.portal.temperature"
+            tone="var(--warn)"
+          />
+          <ReadingsChart
+            v-if="caps(device).humid"
+            :readings="readings"
+            field="h"
+            unit="%"
+            :label="t.portal.humidity"
+            tone="var(--primary)"
+          />
+        </div>
+      </template>
+
       <button
+        v-if="switches"
         type="button"
         class="mt-8 inline-flex h-12 w-full items-center gap-x-3 rounded-lg border border-[var(--layer-line)] bg-[var(--card)] px-4 text-sm font-medium hover:bg-[var(--layer-hover)]"
         @click="openHistory"
