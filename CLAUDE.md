@@ -31,12 +31,12 @@ Portfolio site of Kritsana Wattanapiphatsakul (MageArts), served at https://mage
 - Visible, unobscured focus (2.4.7, 2.4.11); targets ≥ 24×24px (2.5.8).
 - Check contrast before introducing any new color pair; the verified pairs are listed in `src/style.css`.
 
-## Brand and theme (shared with smart-switch)
+## Brand and theme (shared with the device firmware)
 
 - Logo source of truth: `/Users/Shared/My Files/MageArts/logo/` (`MageArts-logo-ver1.svg` → `public/logo.svg`).
   Copy from there, not from other repos.
-- Theme tokens live in `src/style.css` and must stay in sync with the smart-switch firmware UI
-  (`/Users/Shared/My Files/MageArts/inos/smart-switch/lib/MageArts/web/style.css`). Take values only —
+- Theme tokens live in `src/style.css` and must stay in sync with the device firmware UI
+  (`/Users/Shared/My Files/MageArts/github/iot/lib/MageArts/web/style.css`). Take values only —
   never import that file (its class names collide with Preline).
 - Brand teal `#0082a5` fails AA as body text and under white text: use it only for the logo and large text
   (`text-brand`). Interactive primary is `#006a87` (light) / `#35b4d6` (dark, with `#12181b` text).

@@ -11,7 +11,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
- * MageArts theme — shared with smart-switch (inos/smart-switch/lib/MageArts/web/style.css).
+ * MageArts theme — shared with the device firmware (github/iot/lib/MageArts/web/style.css).
  * Brand colors come from ../logo/MageArts-logo-ver1.svg: teal #0082a5, orange #fe6e00.
  * Every text/UI pair below meets WCAG 2.2 AA (text ≥ 4.5:1, large text / UI ≥ 3:1).
  *
