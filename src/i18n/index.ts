@@ -292,6 +292,27 @@ export interface Copy {
     humidity: string
     lowest: string
     highest: string
+    updateButton: string
+    updateWhat: string
+    updateChecking: string
+    upToDate: string
+    updateCheckFailed: string
+    updateHeading: string
+    updateReleased: string
+    updateRestarts: string
+    updateRelayOff: string
+    updateConfirm: string
+    updateWaiting: string
+    updateWaitingSlow: string
+    updateRunning: string
+    updateDone: string
+    updateFailed: string
+    updateRolledBack: string
+    updateSilent: string
+    updateBusy: string
+    updateNeedsUsb: string
+    updateOffline: string
+    updatePending: string
   }
 }
 
@@ -610,6 +631,27 @@ const en: Copy = {
     humidity: 'Humidity',
     lowest: 'Low',
     highest: 'High',
+    updateButton: 'Firmware Update',
+    updateWhat: 'Checks for a newer version first. Nothing is installed until you confirm.',
+    updateChecking: 'Checking…',
+    upToDate: 'Up to date ({v}).',
+    updateCheckFailed: 'Couldn\'t check for updates. Try again later.',
+    updateHeading: 'Update the firmware?',
+    updateReleased: 'Released {ago}',
+    updateRestarts: 'The device restarts and does not answer for about a minute.',
+    updateRelayOff: 'The switch turns off, and stays off until somebody turns it on again.',
+    updateConfirm: 'Update',
+    updateWaiting: 'Waiting for the device…',
+    updateWaitingSlow: 'Waiting for the device… It checks every 5 minutes, so this can take up to 5 minutes.',
+    updateRunning: 'Updating… Normally about a minute.',
+    updateDone: 'Updated to {v}.',
+    updateFailed: 'Update failed: {err}',
+    updateRolledBack: '{v} didn\'t start properly, so the device went back to {fw}.',
+    updateSilent: 'The device isn\'t answering. It may have lost power or network.',
+    updateBusy: 'Updating. The switch cannot be used until it is back.',
+    updateNeedsUsb: 'This firmware cannot update over the network. It needs one flash over USB.',
+    updateOffline: 'The device is offline. It can be updated once it is back online.',
+    updatePending: 'The device still has a request waiting. Try again when it is done.',
   },
 }
 
@@ -887,6 +929,27 @@ const th: Copy = {
     humidity: 'ความชื้น',
     lowest: 'ต่ำสุด',
     highest: 'สูงสุด',
+    updateButton: 'อัปเดตเฟิร์มแวร์',
+    updateWhat: 'ตรวจหาเวอร์ชันใหม่ก่อน จะยังไม่ติดตั้งจนกว่าจะยืนยัน',
+    updateChecking: 'กำลังตรวจ…',
+    upToDate: 'เป็นเวอร์ชันล่าสุดแล้ว ({v})',
+    updateCheckFailed: 'ตรวจหาอัปเดตไม่ได้ ลองใหม่ภายหลัง',
+    updateHeading: 'อัปเดตเฟิร์มแวร์?',
+    updateReleased: 'ออกเมื่อ {ago}',
+    updateRestarts: 'อุปกรณ์จะรีสตาร์ตและไม่ตอบสนองราว 1 นาที',
+    updateRelayOff: 'สวิตช์จะดับ และดับอยู่จนกว่าจะมีคนเปิดใหม่',
+    updateConfirm: 'อัปเดต',
+    updateWaiting: 'รออุปกรณ์รับคำสั่ง…',
+    updateWaitingSlow: 'รออุปกรณ์รับคำสั่ง… อุปกรณ์นี้ตรวจคำสั่งทุก 5 นาที จึงอาจนานถึง 5 นาที',
+    updateRunning: 'กำลังอัปเดต… ปกติราว 1 นาที',
+    updateDone: 'อัปเดตเป็น {v} แล้ว',
+    updateFailed: 'อัปเดตไม่สำเร็จ: {err}',
+    updateRolledBack: '{v} เริ่มทำงานไม่สำเร็จ อุปกรณ์จึงกลับไปใช้ {fw}',
+    updateSilent: 'อุปกรณ์ไม่ตอบ อาจไฟดับหรือหลุดจากเครือข่าย',
+    updateBusy: 'กำลังอัปเดต ใช้สวิตช์ไม่ได้จนกว่าอุปกรณ์จะกลับมา',
+    updateNeedsUsb: 'เฟิร์มแวร์นี้อัปเดตผ่านเครือข่ายไม่ได้ ต้องแฟลชผ่าน USB หนึ่งครั้ง',
+    updateOffline: 'อุปกรณ์ออฟไลน์อยู่ อัปเดตได้เมื่อกลับมาออนไลน์',
+    updatePending: 'อุปกรณ์ยังมีคำสั่งค้างอยู่ ลองใหม่เมื่อเสร็จแล้ว',
   },
 }
 

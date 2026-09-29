@@ -5,6 +5,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Download,
   Eraser,
   History,
   Pencil,
@@ -17,9 +18,11 @@ import { authReady, user } from '@/composables/useAuth'
 import {
   agoText,
   askDevice,
+  askUpdate,
   canSense,
   canSwitch,
   caps,
+  compareVersions,
   deviceName,
   hearsAtOnce,
   devices,
@@ -36,7 +39,11 @@ import {
   releaseDevices,
   setPower,
   powerTone,
+  updateBlocker,
+  updatePhase,
+  updating,
 } from '@/composables/useDevices'
+import { latestRelease, type Release } from '@/composables/useFirmware'
 import { currentSite, isOwner, editDevice } from '@/composables/useSites'
 import { DEFAULT_ICON, ICON_GROUPS, iconByKey } from '@/composables/useIcons'
 import { closeLog, logLines, logReady, openLog, type LogLine } from '@/composables/useDeviceLog'
@@ -342,8 +349,117 @@ async function release() {
   }
 }
 
+/*
+ * Updating the firmware, which only the owner may ask for.
+ *
+ * The button is always there. Nothing is asked of GitHub until it is
+ * pressed, so a page load costs no request (useFirmware), and not at all
+ * when the device could not take an update anyway - too old, offline, or
+ * already asked something. Otherwise one of three things: a newer release,
+ * which opens the dialog; the same or older, which says so and writes
+ * nothing; or no answer, which also writes nothing.
+ */
+const checking = ref(false)
+const updateSaid = ref('')
+const offered = ref<Release | null>(null)
+const updateDialog = ref<HTMLDialogElement | null>(null)
+
+// Commands are lost while it updates (PROTOCOL.md, "Asking for one"), so
+// the power button waits for it.
+const busy = computed(() => (device.value ? updating(device.value) : false))
+
+async function checkUpdate() {
+  const current = device.value
+  if (!current || checking.value) return
+
+  updateSaid.value = ''
+
+  const blocker = updateBlocker(current)
+  if (blocker) {
+    updateSaid.value = {
+      'old-firmware': t.value.portal.updateNeedsUsb,
+      offline: t.value.portal.updateOffline,
+      busy: t.value.portal.updatePending,
+    }[blocker]
+    return
+  }
+
+  checking.value = true
+
+  try {
+    const release = await latestRelease()
+    const order = compareVersions(release.ver, current.fw)
+
+    if (order === null) updateSaid.value = t.value.portal.updateCheckFailed
+    else if (order <= 0) updateSaid.value = t.value.portal.upToDate.replace('{v}', release.ver)
+    else {
+      offered.value = release
+      updateDialog.value?.showModal()
+    }
+  } catch {
+    // The rate limit, no network, or GitHub itself - which of them is not
+    // something this page can tell, and the answer is the same.
+    updateSaid.value = t.value.portal.updateCheckFailed
+  } finally {
+    checking.value = false
+  }
+}
+
+function closeUpdate() {
+  updateDialog.value?.close()
+}
+
+function updateBackdrop(event: MouseEvent) {
+  if (event.target === updateDialog.value) closeUpdate()
+}
+
+async function confirmUpdate() {
+  const current = device.value
+  const release = offered.value
+  closeUpdate()
+  if (!current || !release) return
+
+  updateSaid.value = ''
+
+  try {
+    await askUpdate(current.id, release.ver)
+  } catch {
+    updateSaid.value = t.value.portal.askFailed
+  }
+}
+
+// What the record says about an update, in words. Empty when there is
+// nothing to say, so the live region below stays quiet.
+const phaseText = computed(() => {
+  const current = device.value
+  if (!current) return ''
+
+  const now = updatePhase(current)
+  const p = t.value.portal
+
+  switch (now.phase) {
+    case 'waiting':
+      return hearsAtOnce(current) ? p.updateWaiting : p.updateWaitingSlow
+    case 'updating':
+      return p.updateRunning
+    case 'done':
+      return p.updateDone.replace('{v}', now.ver)
+    case 'silent':
+      return p.updateSilent
+    case 'failed':
+      return p.updateFailed.replace('{err}', now.err)
+    case 'rolled-back':
+      return p.updateRolledBack.replace('{v}', now.ver).replace('{fw}', current.fw ?? '')
+    default:
+      return ''
+  }
+})
+
+const updateNote = computed(() => (checking.value ? t.value.portal.updateChecking : updateSaid.value || phaseText.value))
+
 const note = computed(() => {
   if (failed.value) return t.value.portal.commandFailed
+  if (busy.value) return t.value.portal.updateBusy
   if (silent.value) return t.value.portal.noAnswer
 
   // Not an error, so it is not red: the device has simply not been heard
@@ -437,7 +553,7 @@ const iconButton =
           type="button"
           role="switch"
           :aria-checked="power === 'on'"
-          :disabled="sending"
+          :disabled="sending || busy"
           aria-labelledby="power-label"
           aria-describedby="power-state power-note"
           class="group mt-3 flex size-32 items-center justify-center rounded-full disabled:opacity-60"
@@ -664,6 +780,26 @@ const iconButton =
             <p class="mt-1.5 text-xs text-muted-foreground">{{ t.portal.rebootWhat }}</p>
           </div>
 
+          <!-- Always shown. Whether the board can take an update, and whether
+               there is anything newer, are both answered on the press - the
+               only time GitHub is asked. The line under it is kept in the
+               page so that the answer is announced (WCAG 4.1.3). -->
+          <div>
+            <button
+              type="button"
+              :disabled="checking || busy"
+              class="inline-flex h-11 w-full items-center justify-center gap-x-2 rounded-lg border border-[var(--layer-line)] px-4 text-sm font-medium hover:bg-[var(--layer-hover)] disabled:opacity-60"
+              @click="checkUpdate"
+            >
+              <Download class="size-4 shrink-0" aria-hidden="true" />
+              {{ t.portal.updateButton }}
+            </button>
+            <p class="mt-1.5 text-xs text-muted-foreground">
+              {{ t.portal.updateWhat }}
+            </p>
+            <p role="status" class="text-sm" :class="updateNote ? 'mt-1.5' : ''">{{ updateNote }}</p>
+          </div>
+
           <div>
             <button
               type="button"
@@ -781,6 +917,55 @@ const iconButton =
     :confirm-label="t.portal.reboot"
     @confirm="ask('reboot')"
   />
+
+  <!-- ---------- firmware update ----------
+
+       Its own dialog rather than ConfirmDialog, because it has release notes
+       to carry and those can be long. Not red: nothing is lost and nobody
+       has to walk over to the device, which is what red is kept for. -->
+  <dialog
+    ref="updateDialog"
+    aria-labelledby="update-heading"
+    class="m-auto max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[var(--layer-line)] bg-[var(--card)] p-0 text-foreground backdrop:bg-black/50"
+    @click="updateBackdrop"
+  >
+    <div v-if="offered && device" class="flex max-h-[calc(100dvh-2rem)] flex-col">
+      <div class="shrink-0 px-5 pt-5 sm:px-6 sm:pt-6">
+        <h2 id="update-heading" class="text-lg font-semibold">{{ t.portal.updateHeading }}</h2>
+        <p class="mt-2 font-mono text-base">{{ device.fw }} → {{ offered.ver }}</p>
+        <p v-if="offered.publishedAt" class="mt-1 text-xs text-muted-foreground">
+          {{ t.portal.updateReleased.replace('{ago}', agoText(offered.publishedAt)) }}
+        </p>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6">
+        <p v-if="offered.notes" class="mt-4 text-sm whitespace-pre-line">{{ offered.notes }}</p>
+
+        <ul class="mt-4 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+          <li>{{ t.portal.updateRestarts }}</li>
+          <li v-if="canSwitch(device)">{{ t.portal.updateRelayOff }}</li>
+        </ul>
+      </div>
+
+      <div class="flex shrink-0 gap-3 px-5 pt-5 pb-5 sm:px-6 sm:pb-6">
+        <button
+          type="button"
+          autofocus
+          class="inline-flex h-11 flex-1 items-center justify-center rounded-lg border border-[var(--layer-line)] px-4 text-sm font-medium hover:bg-[var(--layer-hover)]"
+          @click="closeUpdate"
+        >
+          {{ t.portal.cancel }}
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-11 flex-1 items-center justify-center rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)]"
+          @click="confirmUpdate"
+        >
+          {{ t.portal.updateConfirm }}
+        </button>
+      </div>
+    </div>
+  </dialog>
 
   <ConfirmDialog
     ref="resetAsk"
