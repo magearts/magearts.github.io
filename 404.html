@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- The zoom is pinned, on every page of the site.
+
+         This is a deliberate exception to WCAG 2.2 AA, made by the owner of
+         the project and written down here so that nobody - including a future
+         me - quietly puts it back. 1.4.4 Resize Text expects a person to be
+         able to enlarge text to 200%, and pinch zoom is how that is done on a
+         phone. Pinning it fails that criterion, on the brand pages as much as
+         in the portal.
+
+         It was scoped to the portal alone for a while, on the argument that
+         the portal is an application and the brand site is a document. The
+         owner asked for it everywhere, so it is everywhere, and the cost is
+         recorded rather than argued about again.
+
+         Being static rather than set per route matters: it holds from the
+         first paint, before any JavaScript has run, which is where a page
+         would otherwise be zoomable for a moment.
+
+         Two things it does not do. It has no effect in an ordinary iOS Safari
+         tab, because Apple has ignored user-scalable since iOS 10 - it bites
+         in a standalone home-screen app and in Android Chrome. And it is not
+         what stops a double tap from zooming: that is `touch-action:
+         manipulation` in style.css, which is standards-clean and applies
+         everywhere. -->
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+
+    <meta name="title" content="MageArts — Kritsana Wattanapiphatsakul">
+    <meta name="description"
+        content="MageArts is the name Kritsana Wattanapiphatsakul builds under — a developer and maker in Thailand, currently building a Wi-Fi switch module you set up from your phone.">
+    <meta name="keywords"
+        content="MageArts, Kritsana Wattanapiphatsakul, IoT, ESP32, smart switch, Wi-Fi switch module, inline relay, embedded hardware, maker, 3D printing, web developer">
+    <meta name="author" content="Kritsana Wattanapiphatsakul">
+    <meta name="robots" content="index, follow">
+
+    <!-- Two real URLs, one per language, so a Thai search result can point at
+         the Thai page. The router keeps <html lang>, the title and the
+         canonical link in step as the visitor moves between them. -->
+    <link rel="canonical" href="https://magearts.github.io/">
+    <link rel="alternate" hreflang="en" href="https://magearts.github.io/">
+    <link rel="alternate" hreflang="th" href="https://magearts.github.io/th">
+    <link rel="alternate" hreflang="x-default" href="https://magearts.github.io/">
+
+    <!-- Facebook, LINE and X do not run JavaScript, so these stay on the
+         English copy for both URLs. Only a pre-rendered build could change
+         that, and this site is not worth one yet. -->
+    <meta property="og:title" content="MageArts — Kritsana Wattanapiphatsakul">
+    <meta property="og:description"
+        content="A developer and maker in Thailand, currently building a Wi-Fi switch module you set up from your phone.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://magearts.github.io/">
+    <meta property="og:image" content="https://magearts.github.io/preview.png">
+    <meta property="og:site_name" content="MageArts">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="th_TH">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MageArts — Kritsana Wattanapiphatsakul">
+    <meta name="twitter:description"
+        content="A developer and maker in Thailand, currently building a Wi-Fi switch module you set up from your phone.">
+    <meta name="twitter:image" content="https://magearts.github.io/preview.png">
+
+    <title>MageArts — Kritsana Wattanapiphatsakul</title>
+    <link rel="icon" href="/logo.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- The manifest link is injected by vite-plugin-pwa at build time. These
+         are the parts iOS reads instead: it has never supported the manifest's
+         icons, and it still wants the older capable flag under Apple's name. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-title" content="MageArts">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Paints the phone's browser chrome in the page background rather than
+         leaving a white bar above a dark page. -->
+    <meta name="theme-color" content="#f1f5f7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#12181b" media="(prefers-color-scheme: dark)">
+
+    <!-- Tells a search engine that MageArts and the person are the same
+         entity. Person, not Organization: it is a name he works under, not a
+         registered company. -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Kritsana Wattanapiphatsakul",
+        "alternateName": "MageArts",
+        "url": "https://magearts.github.io/",
+        "image": "https://magearts.github.io/logo.svg",
+        "email": "mailto:magearts.th@gmail.com",
+        "jobTitle": "Developer and maker",
+        "sameAs": ["https://github.com/magearts"],
+        "knowsAbout": ["Web development", "IoT", "Embedded hardware", "3D printing"]
+    }
+    </script>
+
+    <!-- Preline switches themes via the .dark class (same as smart-switch).
+         This runs before Vue so the page never paints the wrong theme first,
+         and it has to agree with src/theme.ts: 'light' and 'dark' are held to,
+         anything else - 'auto', or nothing stored at all - follows the OS and
+         keeps following it. -->
+    <script>
+        (function () {
+            var mq = matchMedia('(prefers-color-scheme: dark)');
+            var stored = null;
+            try { stored = localStorage.getItem('magearts-theme'); } catch (e) { }
+            var fixed = stored === 'light' || stored === 'dark';
+            function apply() {
+                document.documentElement.classList.toggle(
+                    'dark', fixed ? stored === 'dark' : mq.matches
+                );
+            }
+            apply();
+            if (!fixed) mq.addEventListener('change', apply);
+        })();
+    </script>
+  <script type="module" crossorigin src="/assets/index-Dc9hfAg_.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/usePush-Cu1GNayx.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-DVfrwqhc.css">
+<link rel="manifest" href="/manifest.webmanifest"></head>
+
+<body class="bg-background text-foreground">
+    <div id="app"></div>
+</body>
+
+</html>
